@@ -10,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.io.wallet_service.application.dto_in.LoginRequest;
 import com.io.wallet_service.application.dto_in.UserRegistrationRequest;
+import com.io.wallet_service.application.dto_out.LoginResponse;
 import com.io.wallet_service.application.dto_out.UserRegistrationResponse;
-import com.io.wallet_service.application.usecase.RegisterUserUseCase;
+import com.io.wallet_service.application.usecase.AuthUserUseCase;
 
 import jakarta.validation.Valid;
 
@@ -22,18 +24,25 @@ import jakarta.validation.Valid;
 @Validated
 public class AuthController {
 
-    private final RegisterUserUseCase registerUserUseCase;
+    private final AuthUserUseCase authService;
 
-    public AuthController(RegisterUserUseCase registerUserUseCase) {
-        this.registerUserUseCase = registerUserUseCase;
+    public AuthController(AuthUserUseCase authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> postMethodName(@RequestBody @Valid UserRegistrationRequest request) {
         
-        UUID userId = registerUserUseCase.register(request.getEmail(), request.getPassword());
+        UUID userId = authService.register(request.getEmail(), request.getPassword());
         
         return ResponseEntity.status(HttpStatus.CREATED).body(new UserRegistrationResponse(userId));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+        @Valid @RequestBody LoginRequest request
+    ) {
+        return ResponseEntity.ok(authService.login(request));
     }
     
     
