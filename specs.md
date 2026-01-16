@@ -327,3 +327,17 @@ spring:
 ✅ Dev & Test
 
 - Spring Boot DevTools
+
+### TODO
+
+- [✔] Auth
+- [✔] JWT
+- [✔] /me
+↓
+- [ ] Role & Authorization
+- [ ] Wallet
+- [ ] Ledger Transaction
+- [ ] Transfer / Topup
+- [ ] Idempotency
+- [ ] Locking
+- [ ] Audit Log
