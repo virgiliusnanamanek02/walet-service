@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/portfolios
+    username: wallet
+    password: your_db_password_here
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: fintech
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    schemas: fintech
+
+server:
+  port: 8080
