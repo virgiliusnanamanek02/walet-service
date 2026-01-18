@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE  IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE users (
 );
 
 -- Email harus unik (identity utama user)
-CREATE UNIQUE INDEX ux_users_email ON users (email);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email ON users (email);
 
 -- Index untuk soft delete query
-CREATE INDEX ix_users_deleted ON users (deleted);
+CREATE INDEX IF NOT EXISTS ix_users_deleted ON users (deleted);
