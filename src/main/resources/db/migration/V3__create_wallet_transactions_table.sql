@@ -1,4 +1,4 @@
-CREATE TABLE wallet_transactions (
+CREATE TABLE IF NOT EXISTS wallet_transactions (
     id UUID PRIMARY KEY,
     wallet_id UUID NOT NULL,
     type VARCHAR(10) NOT NULL,
