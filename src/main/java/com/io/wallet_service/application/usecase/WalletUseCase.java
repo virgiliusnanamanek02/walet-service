@@ -7,6 +7,8 @@ import com.io.wallet_service.domain.repository.WalletRepository;
 import com.io.wallet_service.domain.repository.WalletTransactionRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.apache.commons.codec.digest.DigestUtils;
+import java.nio.charset.StandardCharsets;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -15,10 +17,12 @@ import java.util.UUID;
 public class WalletUseCase {
     private final WalletRepository walletRepository;
     private final WalletTransactionRepository walletTransactionRepository;
+    private final IdempotencyUseCase idempotencyUseCase;
 
-    public WalletUseCase(WalletRepository walletRepository, WalletTransactionRepository walletTransactionRepository) {
+    public WalletUseCase(WalletRepository walletRepository, WalletTransactionRepository walletTransactionRepository, IdempotencyUseCase idempotencyUseCase) {
         this.walletRepository = walletRepository;
         this.walletTransactionRepository = walletTransactionRepository;
+        this.idempotencyUseCase = idempotencyUseCase;
     }
 
     @Transactional
@@ -83,16 +87,55 @@ public class WalletUseCase {
     public void topUp(
             UUID userId,
             BigDecimal amount,
-            String reference
+            String reference,
+            String idemKey
     ) {
-        Wallet wallet = walletRepository
-                .findByUserIdForUpdate(userId)
-                .orElseThrow();
+        final String endpoint = "POST:/api/wallet/topup";
 
-        wallet.credit(amount);
-
-        walletTransactionRepository.save(
-                WalletTransaction.credit(wallet, amount, reference)
+        String payload = String.join("|",
+                userId.toString(),
+                amount.stripTrailingZeros().toPlainString(),
+                reference
         );
+
+        String requestHash = DigestUtils.sha256Hex(
+                payload.getBytes(StandardCharsets.UTF_8)
+        );
+
+        idempotencyUseCase.validateAndStart(
+                userId,
+                idemKey,
+                endpoint,
+                requestHash
+        );
+
+        try {
+
+            Wallet wallet = walletRepository
+                    .findByUserIdForUpdate(userId)
+                    .orElseThrow();
+
+            wallet.credit(amount);
+
+            walletTransactionRepository.save(
+                    WalletTransaction.credit(wallet, amount, reference)
+            );
+
+            idempotencyUseCase.markCompleted(
+                    userId,
+                    idemKey,
+                    endpoint
+            );
+
+        } catch (Exception e) {
+            idempotencyUseCase.markCompleted(
+                    userId,
+                    idemKey,
+                    endpoint
+            );
+            throw e;
+        }
     }
+
+
 }
