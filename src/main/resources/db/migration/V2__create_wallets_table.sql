@@ -1,4 +1,4 @@
-CREATE TABLE wallets (
+CREATE TABLE IF NOT EXISTS wallets (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     balance NUMERIC(19,2) NOT NULL DEFAULT 0,
