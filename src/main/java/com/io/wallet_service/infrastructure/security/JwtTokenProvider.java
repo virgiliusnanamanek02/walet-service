@@ -14,31 +14,17 @@ import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtTokenProvider {
-    private final SecretKey key = Keys.hmacShaKeyFor(
-        "super-secret-key-min-32-chars-long".getBytes()
-    );
+	private final SecretKey key = Keys.hmacShaKeyFor("super-secret-key-min-32-chars-long".getBytes());
 
-    private final long EXPIRATION_MS = 24 * 60 * 60 * 1000;
+	private final long EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
+	public String generateToken(User user) {
+		return Jwts.builder().subject(user.getId().toString()).claim("email", user.getEmail()).issuedAt(new Date())
+				.expiration(new Date(System.currentTimeMillis() + EXPIRATION_MS)).signWith(key).compact();
+	}
 
-    public String generateToken(User user){
-        return Jwts.builder()
-        .subject(user.getId().toString())
-        .claim("email", user.getEmail())
-        .issuedAt(new Date())
-        .expiration(new Date(System.currentTimeMillis() + EXPIRATION_MS))
-        .signWith(key)
-        .compact();
-    }
-
-    public UUID getUserId(String token){
-        return UUID.fromString(
-            Jwts.parser()
-            .verifyWith(key)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload()
-            .getSubject()
-        );
-    }
+	public UUID getUserId(String token) {
+		return UUID
+				.fromString(Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().getSubject());
+	}
 }

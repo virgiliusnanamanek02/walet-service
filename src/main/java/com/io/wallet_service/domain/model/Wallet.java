@@ -99,5 +99,6 @@ public class Wallet {
     public void setVersion(Long version) {
         this.version = version;
     }
+
 }
 

@@ -17,56 +17,45 @@ import java.util.UUID;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenProvider jwtTokenProvider;
-    private final UserRepository userRepository;
+	private final JwtTokenProvider jwtTokenProvider;
+	private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(
-            JwtTokenProvider jwtTokenProvider,
-            UserRepository userRepository
-    ) {
-        this.jwtTokenProvider = jwtTokenProvider;
-        this.userRepository = userRepository;
-    }
+	public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, UserRepository userRepository) {
+		this.jwtTokenProvider = jwtTokenProvider;
+		this.userRepository = userRepository;
+	}
 
-    @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException {
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+			throws ServletException {
 
-        String header = request.getHeader("Authorization");
+		String header = request.getHeader("Authorization");
 
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+		if (header != null && header.startsWith("Bearer ")) {
+			String token = header.substring(7);
 
-            try {
-                UUID userId = jwtTokenProvider.getUserId(token);
+			try {
+				UUID userId = jwtTokenProvider.getUserId(token);
 
-                User user = userRepository.findById(userId)
-                        .filter(u -> !Boolean.TRUE.equals(u.getDeleted()))
-                        .orElseThrow();
+				User user = userRepository.findById(userId).filter(u -> !Boolean.TRUE.equals(u.getDeleted()))
+						.orElseThrow();
 
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                user,
-                                null,
-                                List.of()
-                        );
+				UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null,
+						List.of());
 
-                SecurityContextHolder.getContext()
-                        .setAuthentication(authentication);
+				SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            } catch (Exception e) {
-                System.getLogger(JwtAuthenticationFilter.class.getName()).log(System.Logger.Level.ERROR, (String) null, e);
-                SecurityContextHolder.clearContext();
-            }
-        }
+			} catch (Exception e) {
+				System.getLogger(JwtAuthenticationFilter.class.getName()).log(System.Logger.Level.ERROR, (String) null,
+						e);
+				SecurityContextHolder.clearContext();
+			}
+		}
 
-        try {
-            filterChain.doFilter(request, response);
-        } catch (java.io.IOException ex) {
-            System.getLogger(JwtAuthenticationFilter.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
-        }
-    }
+		try {
+			filterChain.doFilter(request, response);
+		} catch (java.io.IOException ex) {
+			System.getLogger(JwtAuthenticationFilter.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+		}
+	}
 }

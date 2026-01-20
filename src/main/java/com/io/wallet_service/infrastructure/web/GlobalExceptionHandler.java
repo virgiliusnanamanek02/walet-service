@@ -11,17 +11,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(AlreadyProcessedException.class)
-    public ResponseEntity<?> handleAlreadyProcessed(
-            AlreadyProcessedException ex
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(
-                        Map.of(
-                                "status", "ALREADY_PROCESSED",
-                                "message", ex.getMessage()
-                        )
-                );
-    }
+	@ExceptionHandler(AlreadyProcessedException.class)
+	public ResponseEntity<?> handleAlreadyProcessed(AlreadyProcessedException ex) {
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(Map.of("status", "ALREADY_PROCESSED", "message", ex.getMessage()));
+	}
 }

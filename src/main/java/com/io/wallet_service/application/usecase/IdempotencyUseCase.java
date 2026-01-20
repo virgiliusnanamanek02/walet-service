@@ -1,12 +1,14 @@
 package com.io.wallet_service.application.usecase;
 
+import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+
 import com.io.wallet_service.application.exception.AlreadyProcessedException;
 import com.io.wallet_service.domain.model.IdempotencyKey;
 import com.io.wallet_service.domain.repository.IdempotencyKeyRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import jakarta.transaction.Transactional;
 
 @Service
 public class IdempotencyUseCase {
@@ -16,6 +18,7 @@ public class IdempotencyUseCase {
         this.idempotencyKeyRepository = idempotencyKeyRepository;
     }
 
+    @SuppressWarnings("null")
     @Transactional
     public void validateAndStart( UUID userId, String idemKey, String endpoint, String requestHash){
         idempotencyKeyRepository.findByUserIdAndIdemKeyAndEndpoint(userId, idemKey, endpoint)

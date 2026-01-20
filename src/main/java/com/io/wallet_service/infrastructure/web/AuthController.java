@@ -18,32 +18,28 @@ import com.io.wallet_service.application.usecase.AuthUserUseCase;
 
 import jakarta.validation.Valid;
 
-
 @RestController
 @RequestMapping("/api/auth")
 @Validated
 public class AuthController {
 
-    private final AuthUserUseCase authService;
+	private final AuthUserUseCase authService;
 
-    public AuthController(AuthUserUseCase authService) {
-        this.authService = authService;
-    }
+	public AuthController(AuthUserUseCase authService) {
+		this.authService = authService;
+	}
 
-    @PostMapping("/register")
-    public ResponseEntity<?> postMethodName(@RequestBody @Valid UserRegistrationRequest request) {
-        
-        UUID userId = authService.register(request.getEmail(), request.getPassword());
-        
-        return ResponseEntity.status(HttpStatus.CREATED).body(new UserRegistrationResponse(userId));
-    }
+	@PostMapping("/register")
+	public ResponseEntity<?> postMethodName(@RequestBody @Valid UserRegistrationRequest request) {
 
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
-        @Valid @RequestBody LoginRequest request
-    ) {
-        return ResponseEntity.ok(authService.login(request));
-    }
-    
-    
+		UUID userId = authService.register(request.getEmail(), request.getPassword());
+
+		return ResponseEntity.status(HttpStatus.CREATED).body(new UserRegistrationResponse(userId));
+	}
+
+	@PostMapping("/login")
+	public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+		return ResponseEntity.ok(authService.login(request));
+	}
+
 }
