@@ -15,127 +15,83 @@ import java.util.UUID;
 
 @Service
 public class WalletUseCase {
-    private final WalletRepository walletRepository;
-    private final WalletTransactionRepository walletTransactionRepository;
-    private final IdempotencyUseCase idempotencyUseCase;
+	private final WalletRepository walletRepository;
+	private final WalletTransactionRepository walletTransactionRepository;
+	private final IdempotencyUseCase idempotencyUseCase;
 
-    public WalletUseCase(WalletRepository walletRepository, WalletTransactionRepository walletTransactionRepository, IdempotencyUseCase idempotencyUseCase) {
-        this.walletRepository = walletRepository;
-        this.walletTransactionRepository = walletTransactionRepository;
-        this.idempotencyUseCase = idempotencyUseCase;
-    }
+	public WalletUseCase(WalletRepository walletRepository, WalletTransactionRepository walletTransactionRepository,
+			IdempotencyUseCase idempotencyUseCase) {
+		this.walletRepository = walletRepository;
+		this.walletTransactionRepository = walletTransactionRepository;
+		this.idempotencyUseCase = idempotencyUseCase;
+	}
 
-    @Transactional
-    public void credit(UUID walletId, BigDecimal amount, String reference){
-        Wallet wallet = walletRepository.findByUserId(walletId).orElseThrow();
+	@Transactional
+	public void credit(UUID walletId, BigDecimal amount, String reference) {
+		Wallet wallet = walletRepository.findByUserId(walletId).orElseThrow();
 
-        WalletTransaction walletTransaction = new WalletTransaction(
-                wallet.getId(), TransactionType.CREDIT, amount, reference
-        );
+		WalletTransaction walletTransaction = new WalletTransaction(wallet.getId(), TransactionType.CREDIT, amount,
+				reference);
 
-        walletTransactionRepository.save(walletTransaction);
-    }
+		walletTransactionRepository.save(walletTransaction);
+	}
 
-    @Transactional
-    public void debit(UUID walletId, BigDecimal amount, String reference){
-        BigDecimal balance = walletTransactionRepository.calculateBalance(walletId);
+	@Transactional
+	public void debit(UUID walletId, BigDecimal amount, String reference) {
+		BigDecimal balance = walletTransactionRepository.calculateBalance(walletId);
 
-        if (balance.compareTo(amount) < 0){
-            throw new IllegalStateException("Insufficient balance");
-        }
+		if (balance.compareTo(amount) < 0) {
+			throw new IllegalStateException("Insufficient balance");
+		}
 
-        WalletTransaction walletTransaction = new WalletTransaction(
-                walletId, TransactionType.DEBIT, amount, reference
-        );
+		WalletTransaction walletTransaction = new WalletTransaction(walletId, TransactionType.DEBIT, amount, reference);
 
-        walletTransactionRepository.save(walletTransaction);
-    }
+		walletTransactionRepository.save(walletTransaction);
+	}
 
-    @Transactional
-    public void transfer(
-            UUID fromWalletId,
-            UUID toWalletId,
-            BigDecimal amount,
-            String reference
-    ) {
+	@Transactional
+	public void transfer(UUID fromWalletId, UUID toWalletId, BigDecimal amount, String reference) {
 
-        Wallet sender = walletRepository
-                .findByIdForUpdate(fromWalletId)
-                .orElseThrow();
+		Wallet sender = walletRepository.findByIdForUpdate(fromWalletId).orElseThrow();
 
-        Wallet receiver = walletRepository
-                .findByIdForUpdate(toWalletId)
-                .orElseThrow();
+		Wallet receiver = walletRepository.findByIdForUpdate(toWalletId).orElseThrow();
 
-        if (sender.getId().equals(receiver.getId())) {
-            throw new IllegalArgumentException("same wallet");
-        }
+		if (sender.getId().equals(receiver.getId())) {
+			throw new IllegalArgumentException("same wallet");
+		}
 
-        sender.debit(amount);
-        receiver.credit(amount);
+		sender.debit(amount);
+		receiver.credit(amount);
 
-        walletTransactionRepository.save(
-                WalletTransaction.debit(sender, amount, reference)
-        );
+		walletTransactionRepository.save(WalletTransaction.debit(sender, amount, reference));
 
-        walletTransactionRepository.save(
-                WalletTransaction.credit(receiver, amount, reference)
-        );
-    }
+		walletTransactionRepository.save(WalletTransaction.credit(receiver, amount, reference));
+	}
 
-    @Transactional
-    public void topUp(
-            UUID userId,
-            BigDecimal amount,
-            String reference,
-            String idemKey
-    ) {
-        final String endpoint = "POST:/api/wallet/topup";
+	@Transactional
+	public void topUp(UUID userId, BigDecimal amount, String reference, String idemKey) {
+		final String endpoint = "POST:/api/wallet/topup";
 
-        String payload = String.join("|",
-                userId.toString(),
-                amount.stripTrailingZeros().toPlainString(),
-                reference
-        );
+		String payload = String.join("|", userId.toString(), amount.stripTrailingZeros().toPlainString(), reference);
 
-        String requestHash = DigestUtils.sha256Hex(
-                payload.getBytes(StandardCharsets.UTF_8)
-        );
+		String requestHash = DigestUtils.sha256Hex(payload.getBytes(StandardCharsets.UTF_8));
 
-        idempotencyUseCase.validateAndStart(
-                userId,
-                idemKey,
-                endpoint,
-                requestHash
-        );
+		idempotencyUseCase.validateAndStart(userId, idemKey, endpoint, requestHash);
 
-        try {
+		try {
 
-            Wallet wallet = walletRepository
-                    .findByUserIdForUpdate(userId)
-                    .orElseThrow();
+			Wallet wallet = walletRepository.findByUserIdForUpdate(userId).orElseThrow();
 
-            wallet.credit(amount);
+			wallet.credit(amount);
 
-            walletTransactionRepository.save(
-                    WalletTransaction.credit(wallet, amount, reference)
-            );
+			walletTransactionRepository.save(WalletTransaction.credit(wallet, amount, reference));
 
-            idempotencyUseCase.markCompleted(
-                    userId,
-                    idemKey,
-                    endpoint
-            );
+			idempotencyUseCase.markCompleted(userId, idemKey, endpoint);
 
-        } catch (Exception e) {
-            idempotencyUseCase.markCompleted(
-                    userId,
-                    idemKey,
-                    endpoint
-            );
-            throw e;
-        }
-    }
-
+		} catch (Exception e) {
+			idempotencyUseCase.markCompleted(userId, idemKey, endpoint);
+			throw e;
+		}
+	}
 
 }

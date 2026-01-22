@@ -12,45 +12,33 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class IdempotencyUseCase {
-    private final IdempotencyKeyRepository idempotencyKeyRepository;
+	private final IdempotencyKeyRepository idempotencyKeyRepository;
 
-    public IdempotencyUseCase(IdempotencyKeyRepository idempotencyKeyRepository) {
-        this.idempotencyKeyRepository = idempotencyKeyRepository;
-    }
+	public IdempotencyUseCase(IdempotencyKeyRepository idempotencyKeyRepository) {
+		this.idempotencyKeyRepository = idempotencyKeyRepository;
+	}
 
-    @SuppressWarnings("null")
-    @Transactional
-    public void validateAndStart( UUID userId, String idemKey, String endpoint, String requestHash){
-        idempotencyKeyRepository.findByUserIdAndIdemKeyAndEndpoint(userId, idemKey, endpoint)
-                .ifPresent(existing -> {
-                    if (!existing.getRequestHash().equals(requestHash)){
-                        throw new IllegalStateException(
-                                "Idempotency-Key reuse with different payload"
-                        );
-                    }
+	@SuppressWarnings("null")
+	@Transactional
+	public void validateAndStart(UUID userId, String idemKey, String endpoint, String requestHash) {
+		idempotencyKeyRepository.findByUserIdAndIdemKeyAndEndpoint(userId, idemKey, endpoint).ifPresent(existing -> {
+			if (!existing.getRequestHash().equals(requestHash)) {
+				throw new IllegalStateException("Idempotency-Key reuse with different payload");
+			}
 
-                    if ("COMPLETED".equals(existing.getStatus())) {
-                        throw new AlreadyProcessedException();
-                    }
-                });
+			if ("COMPLETED".equals(existing.getStatus())) {
+				throw new AlreadyProcessedException();
+			}
+		});
 
-        idempotencyKeyRepository.save(
-                IdempotencyKey.processing(
-                        userId, idemKey, endpoint, requestHash
-                )
-        );
-    }
+		idempotencyKeyRepository.save(IdempotencyKey.processing(userId, idemKey, endpoint, requestHash));
+	}
 
-    @Transactional
-    public void markCompleted(
-            UUID userId,
-            String idemKey,
-            String endpoint
-    ) {
-        IdempotencyKey key = idempotencyKeyRepository
-                .findByUserIdAndIdemKeyAndEndpoint(userId, idemKey, endpoint)
-                .orElseThrow();
+	@Transactional
+	public void markCompleted(UUID userId, String idemKey, String endpoint) {
+		IdempotencyKey key = idempotencyKeyRepository.findByUserIdAndIdemKeyAndEndpoint(userId, idemKey, endpoint)
+				.orElseThrow();
 
-        key.markCompleted();
-    }
+		key.markCompleted();
+	}
 }
