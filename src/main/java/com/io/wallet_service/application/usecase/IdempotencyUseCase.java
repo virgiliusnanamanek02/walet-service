@@ -18,7 +18,6 @@ public class IdempotencyUseCase {
 		this.idempotencyKeyRepository = idempotencyKeyRepository;
 	}
 
-	@SuppressWarnings("null")
 	@Transactional
 	public void validateAndStart(UUID userId, String idemKey, String endpoint, String requestHash) {
 		idempotencyKeyRepository.findByUserIdAndIdemKeyAndEndpoint(userId, idemKey, endpoint).ifPresent(existing -> {
